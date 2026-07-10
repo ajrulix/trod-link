@@ -132,6 +132,12 @@
         return SAFE.test(v) ? v : null;
       }
 
+      // Malformed percent-encoding must degrade to "no invite", never a
+      // crashed blank page (review finding: decodeURIComponent throws).
+      function safeDecode(v) {
+        try { return decodeURIComponent(v); } catch (e) { return null; }
+      }
+
       function parseTarget() {
         var path = window.location.pathname || '';
         var params = new URLSearchParams(window.location.search || '');
@@ -139,13 +145,13 @@
         // /add/<handle>
         var addMatch = /^\/add\/([^/]+)\/?$/.exec(path);
         if (addMatch) {
-          var h = sanitize(decodeURIComponent(addMatch[1]));
+          var h = sanitize(safeDecode(addMatch[1]));
           if (h) return { kind: 'friend', value: h };
         }
         // /c/<code>
         var circleMatch = /^\/c\/([^/]+)\/?$/.exec(path);
         if (circleMatch) {
-          var code = sanitize(decodeURIComponent(circleMatch[1]));
+          var code = sanitize(safeDecode(circleMatch[1]));
           if (code) return { kind: 'circle', value: code };
         }
         // ?u=<handle> fallback
