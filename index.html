@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Trod — you're invited</title>
+<meta name="robots" content="noindex" />
+<style>
+  :root {
+    --cream: #F5F0E8;
+    --ink: #2E3D30;
+    --ink-soft: rgba(46,61,48,0.62);
+    --forest: #2d5016;
+    --gold: #C9A84C;
+    --gold-deep: #8a6f23;
+    --gold-line: rgba(201,168,76,0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    text-align: center;
+  }
+  .card {
+    max-width: 420px;
+    width: 100%;
+  }
+  .seal {
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    border: 1px solid var(--gold-line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+  }
+  .seal svg { display: block; }
+  .wordmark {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    color: var(--gold);
+    font-size: 15px;
+    letter-spacing: 5px;
+    margin-bottom: 28px;
+  }
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: 27px;
+    line-height: 1.25;
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+  p.sub {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin: 0 0 30px;
+  }
+  .rule {
+    width: 64px;
+    height: 1px;
+    background: var(--gold-line);
+    margin: 0 auto 30px;
+  }
+  a.primary {
+    display: inline-block;
+    background: var(--forest);
+    color: #fff;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 14px 28px;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 320px;
+  }
+  a.retry {
+    display: inline-block;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--gold-deep);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  a.retry:active { opacity: 0.7; }
+  .hidden { display: none; }
+  .card { opacity: 0; transition: opacity 0.25s ease; }
+  .card.show { opacity: 1; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" id="card">
+      <div class="seal" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2 L14 9 L21 9 L15.5 13.5 L17.5 20.5 L12 16 L6.5 20.5 L8.5 13.5 L3 9 L10 9 Z" fill="#C9A84C"/>
+        </svg>
+      </div>
+      <div class="wordmark">TROD</div>
+      <h1 id="headline">Someone invited you to walk.</h1>
+      <p class="sub" id="subline">Trod is a walking exploration game — reveal the fog on a real map of the world, one step at a time.</p>
+      <div class="rule"></div>
+      <a class="primary" id="storeLink" href="https://play.google.com/store/apps/details?id=com.trod.app">Get Trod on Google Play</a>
+      <a class="retry" id="retryLink" href="#">Already have Trod? Open it</a>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // Strict allowlist — this value is used inside a URL we hand to
+      // location.href, so it must never carry anything but safe invite-code
+      // characters. Anything else is treated as "no invite" (plain landing).
+      var SAFE = /^[a-z0-9_-]{1,32}$/i;
+
+      function sanitize(v) {
+        if (typeof v !== 'string') return null;
+        return SAFE.test(v) ? v : null;
+      }
+
+      function parseTarget() {
+        var path = window.location.pathname || '';
+        var params = new URLSearchParams(window.location.search || '');
+
+        // /add/<handle>
+        var addMatch = /^\/add\/([^/]+)\/?$/.exec(path);
+        if (addMatch) {
+          var h = sanitize(decodeURIComponent(addMatch[1]));
+          if (h) return { kind: 'friend', value: h };
+        }
+        // /c/<code>
+        var circleMatch = /^\/c\/([^/]+)\/?$/.exec(path);
+        if (circleMatch) {
+          var code = sanitize(decodeURIComponent(circleMatch[1]));
+          if (code) return { kind: 'circle', value: code };
+        }
+        // ?u=<handle> fallback
+        var u = sanitize(params.get('u'));
+        if (u) return { kind: 'friend', value: u };
+        // ?c=<code> fallback
+        var c = sanitize(params.get('c'));
+        if (c) return { kind: 'circle', value: c };
+
+        return null;
+      }
+
+      function deepLinkFor(target) {
+        if (target.kind === 'friend') return 'com.trod.app://add-friend/' + target.value;
+        return 'com.trod.app://join-circle/' + target.value;
+      }
+
+      var target = parseTarget();
+      var cardEl = document.getElementById('card');
+      var headlineEl = document.getElementById('headline');
+      var sublineEl = document.getElementById('subline');
+      var retryEl = document.getElementById('retryLink');
+
+      function revealLanding() {
+        cardEl.classList.add('show');
+      }
+
+      if (target) {
+        var link = deepLinkFor(target);
+        retryEl.href = link;
+
+        if (target.kind === 'circle') {
+          headlineEl.textContent = 'Join a circle on Trod.';
+          sublineEl.textContent = 'Walk together, compare steps and discoveries, and see who found what — with a group of your own.';
+        } else {
+          headlineEl.textContent = 'Someone wants to add you on Trod.';
+          sublineEl.textContent = 'Trod is a walking exploration game — reveal the fog on a real map of the world, one step at a time.';
+        }
+
+        // Attempt the deep link right away. If Trod is installed, the OS
+        // takes over and this page is never actually seen. If it isn't, the
+        // browser stays put (an unhandled custom scheme is a no-op) and,
+        // after giving the app a beat to grab focus, we reveal the fallback
+        // landing so there's no blank flash while that handoff is pending.
+        window.location.href = link;
+        window.setTimeout(revealLanding, 1500);
+      } else {
+        retryEl.classList.add('hidden');
+        revealLanding();
+      }
+    })();
+  </script>
+</body>
+</html>
